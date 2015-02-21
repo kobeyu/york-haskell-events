@@ -1,0 +1,13 @@
+# Everything by default
+*
+
+# Allow standard files
+!.gitignore
+!README
+
+# Allow direct subdirectories, which may have their own gitignores.
+!*/
+!*/.gitignore
+
+# Slides
+!*/*.tex
