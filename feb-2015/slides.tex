@@ -1,0 +1,234 @@
+% This is made in A4, so the text is really big when scaled up to A3.
+\documentclass[20pt]{beamer}
+\usetheme{default}
+\usefonttheme{serif}
+\setbeamertemplate{navigation symbols}{}
+\geometry{a4paper,landscape}
+
+\usepackage{minted}
+
+\author{Michael Walker}
+\title{A Sane Haskell Development Environment}
+\institute{York Haskell\\
+  \texttt{mike@barrucadu.co.uk}
+}
+\date{}
+
+\begin{document}
+
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+\begin{frame}[fragile]{Hackage}
+  \begin{verbatim}
+msw504 on pc116 in /tmp/demo 
+ >>>  cabal update
+Downloading the latest package list from hackage.haskell.org
+
+msw504 on pc116 in /tmp/demo 
+ >>>  cabal install hello
+Resolving dependencies...
+Configuring hello-1.0.0.2...
+Building hello-1.0.0.2...
+Preprocessing executable 'hello' for hello-1.0.0.2...
+[1 of 1] Compiling Main             ( src/hello.hs,
+dist/dist-sandbox-d9586924/build/hello/hello-tmp/Main.o )
+Linking dist/dist-sandbox-d9586924/build/hello/hello ...
+Installing executable(s) in /tmp/demo/.cabal-sandbox/bin
+Installed hello-1.0.0.2
+
+msw504 on pc116 in /tmp/demo 
+ >>>  ./.cabal-sandbox/bin/hello 
+Hello, World!
+  \end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]{Building with Cabal}
+  \begin{columns}
+
+  \column{0.34\textwidth}
+  \texttt{ghc Main.hs}\\\texttt{ghc --make Main.hs}\\\texttt{runhaskell Main.hs}
+
+  \vspace{3cm}
+
+  \begin{enumerate}
+  \item Make a .cabal file
+  \item Fill in your dependencies
+  \item \texttt{cabal build}
+  \item PROFIT!
+  \end{enumerate}
+
+  \vspace{3.5cm}
+
+  \column{0.66\textwidth}
+  \begin{verbatim}
+name:               demo
+version:            0.1.0.0
+synopsis:           This is a simple .cabal file
+homepage:           http://www.example.com
+license:            PublicDomain
+license-file:       LICENSE
+author:             Michael Walker
+maintainer:         mike@barrucadu.co.uk
+category:           Development
+build-type:         Simple
+cabal-version:      >=1.10
+
+library
+  exposed-modules:  Foo
+  build-depends:    base >=4.6 && <4.7
+  default-language: Haskell2010
+  \end{verbatim}
+  \end{columns}
+\end{frame}
+
+\begin{frame}[fragile]{Cabal Hell}
+  \begin{columns}
+  \column{0.5\textwidth}
+  \begin{itemize}
+  \item Hackage is not a curated collection of packages
+  \item Package dependency constraints may be too strict
+  \item Packages may have incompatible dependencies
+  \item There is no guarantee that any two packages will work together
+  \end{itemize}
+
+  \column{0.5\textwidth}
+  \begin{itemize}
+  \item Stackage is a curated collection of packages
+  \item Any two packages should work together
+  \item Has fewer packages than Hackage
+  \end{itemize}
+  \vspace{5cm}
+  \end{columns}
+
+  \hrule
+
+  \begin{verbatim}
+msw504 on pc116 in /tmp/demo 
+ >>>  cabal sandbox init
+Writing a default package environment file to
+/tmp/demo/cabal.sandbox.config
+Creating a new sandbox at /tmp/demo/.cabal-sandbox
+
+msw504 on pc116 in /tmp/demo 
+ >>>  cabal install uniplate
+Resolving dependencies...
+ -- output omitted --
+Installed uniplate-1.6.12
+  \end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]{Documenting with Haddock}
+  \begin{minted}{haskell}
+-- | A value of type @Find m a@ represents a concurrent search
+-- computation (happening in the 'MonadConc' monad @m@) which may
+-- produce a value of type @a@, or fail. If a value can be returned,
+-- one will be (although it's nondeterministic which one will actually
+-- be returned). Usually you will be working with values of type @Find
+-- IO a@, but the generality allows for testing.
+--
+-- You should prefer using the 'Applicative' instance over the 'Monad'
+-- instance if you can, as the 'Applicative' preserves parallelism.
+newtype Find m a = Find { unFind :: m (WorkItem m a) }
+  \end{minted}
+
+  \vspace{2cm}
+
+  \begin{center}
+    \url{http://barrucadu.github.io/search-party/}
+  \end{center}
+\end{frame}
+
+\begin{frame}{Version Control}
+
+  \begin{center}
+    \includegraphics[width=4cm]{git.eps}
+    \hspace{3cm}
+    \includegraphics[width=4cm]{darcs.eps}
+  \end{center}
+
+  \vspace{2cm}
+
+  A \textit{lot} of Haskell packages are on GitHub. This means that
+  there's a lot to learn from!
+
+  \vspace{5cm}
+\end{frame}
+
+\begin{frame}[fragile]{Continuous Integration}
+\begin{verbatim}
+language: haskell
+
+env:
+ - GHCVER=7.6.3
+ - GHCVER=7.8.4
+
+matrix:
+  allow_failures:
+   - env: GHCVER=head
+
+before_install:
+  ...
+
+install:
+  - $CABAL install --dependencies-only --enable-tests
+  - $CABAL configure -flib-Werror --enable-tests $MODE
+
+script:
+ - $CABAL configure --enable-tests
+ - $CABAL build
+ - $CABAL test
+\end{verbatim}
+\end{frame}
+
+\begin{frame}{My Workflow}
+  \begin{enumerate}
+  \item Agonise over name
+  \item \texttt{cabal init}
+  \item Ignore licensing as usual, and default to the WTFPL
+  \item Hack away until something substantial exists
+  \item Panic, and realise it's all untested
+  \item Add a \texttt{.travis.yml} to build with different GHC
+    versions
+  \item Fix bugs
+  \item Write tests
+  \item Run tests in \texttt{.travis.yml}
+  \item Fix more bugs
+  \item Feel simultaneously guilty over taking so long to ``finish'',
+    and inadequate to push to Hackage
+  \item Continue!
+  \end{enumerate}
+\end{frame}
+
+\begin{frame}{Resources}
+  \begin{center}
+  \url{https://www.haskell.org/cabal/users-guide/}
+
+  \vspace{2cm}
+
+  \url{https://www.haskell.org/haddock/doc/html/}
+
+  \vspace{2cm}
+
+  \url{https://downloads.haskell.org/~ghc/latest/docs/html/users\_guide/}
+
+  \vspace{2cm}
+
+  \url{http://eagain.net/articles/git-for-computer-scientists/}
+
+  \vspace{2cm}
+
+  \url{https://travis-ci.org/}
+  \end{center}
+\end{frame}
+
+\begin{frame}
+  \begin{center}
+    \Huge
+    Next up\ldots programming tasks!
+    https://github.com/york-haskell
+  \end{center}
+\end{frame}
+
+\end{document}
