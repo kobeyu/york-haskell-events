@@ -7,7 +7,10 @@
 -- order. Don't be afraid to refer to things you've already defined!
 module Problems where
 
-import Data.Map (Map)
+import           Control.Arrow ((&&&))
+import           Data.Functor  ((<$>))
+import           Data.List     (foldl', group, splitAt)
+import           Data.Map      (Map, foldlWithKey)
 
 --------------------------------------------------------------------------------
 -- Lists
@@ -17,15 +20,19 @@ import Data.Map (Map)
 -- How could you the type of this function to handle cases where the
 -- index is too big?
 nth :: Int -> [a] -> a
-nth i xs = undefined
+nth i xs = xs !! i
 
 -- | Check how long a list is.
 length :: [a] -> Int
-length xs = undefined
+length = foldl' (const . (+1)) 0
 
 -- | Check if a list is sorted.
 sorted :: Ord a => [a] -> Bool
-sorted xs = undefined
+sorted [] = True
+sorted [x] = True
+sorted (x:x2:xs)
+    | x > x2 = False
+    | otherwise = sorted (x2:xs)
 
 --------------------------------------------------------------------------------
 -- Fibonacci Numbers
@@ -35,11 +42,11 @@ sorted xs = undefined
 
 -- | The list of all fibonacci numbers
 fibs :: [Int]
-fibs = undefined
+fibs = 1 : 1 : zipWith (+) fibs (tail fibs)
 
 -- | Get the nth fibonacci number.
 fibNth :: Int -> Int
-fibNth n = undefined
+fibNth = (fibs!!) . pred
 
 --------------------------------------------------------------------------------
 -- Natural Numbers
@@ -51,58 +58,82 @@ data Nat = Zero | Succ Nat deriving Show
 -- | Turn an 'Int' into a 'Nat'. If the input is less than zero,
 -- return 'Nothing'.
 toNat :: Int -> Maybe Nat
-toNat i = undefined
+toNat 0 = Just Zero
+toNat n
+    | n < 0 = Nothing
+    | n == 0 = Just Zero
+    | otherwise = Succ <$> toNat (pred n)
 
 -- | Check if two natural numbers are equal.
 eqNat :: Nat -> Nat -> Bool
-eqNat a b = undefined
+eqNat Zero Zero = True
+eqNat Zero _ = False
+eqNat _ Zero = False
+eqNat (Succ a) (Succ b) = eqNat a b
 
 -- | Compare two natural numbers.
 --
 -- 'Ordering' is a type with the values 'LT', 'EQ', and 'GT'. It is
 -- defined in Data.Ord.
 compareNat :: Nat -> Nat -> Ordering
-compareNat a b = undefined
+compareNat Zero Zero = EQ
+compareNat Zero _ = LT
+compareNat _ Zero = GT
+compareNat (Succ a) (Succ b) = compareNat a b
 
 -- | Add two natural numbers.
 addNat :: Nat -> Nat -> Nat
-addNat a b = undefined
+addNat Zero b = b
+addNat (Succ a) b = Succ (addNat a b)
 
 -- | Subtract two natural numbers.
 --
 -- You'll need to decide how to handle the case where the second
 -- number is bigger than the first!
 subNat :: Nat -> Nat -> Nat
-subNat a b = undefined
+subNat a Zero = a
+subNat Zero _ = error "subNat goes below Zero"
+subNat (Succ a) (Succ b) = subNat a b
 
 -- | Multiply two natural numbers.
 mulNat :: Nat -> Nat -> Nat
-mulNat a b = undefined
+mulNat Zero _ = Zero
+mulNat _ Zero = Zero
+mulNat (Succ a) b = b `addNat` mulNat a b
 
 --------------------------------------------------------------------------------
 -- Lists Revisted
 
 -- | Check if a list is longer than some amount.
 longerThan :: [a] -> Int -> Bool
-longerThan xs len = undefined
+longerThan [] _ = False
+longerThan _ 0 = True
+longerThan (x:xs) len = longerThan xs (pred len)
 
 -- | Split a list into n-length chunks. For example:
 --
 -- > chunk 3 [1,2,3,4,5,6,7,8] == [[1,2,3],[4,5,6],[7,8]]
 chunk :: Int -> [a] -> [[a]]
-chunk len xs = undefined
+chunk len xs
+    | null b = [a]
+    | otherwise = a : chunk len b
+    where (a,b) = splitAt len xs
+
 
 -- | Perform run-length encoding of a list. For example:
 --
 -- > rle [1, 2, 3, 3, 4, 4] == [(1, 1) (2, 1), (3, 2), (4, 2)]
 rle :: Eq a => [a] -> [(a, Int)]
-rle xs = undefined
+rle = map (head&&&Prelude.length) . group
 
 -- | Reverse run-length encoding of a list.
 --
 -- Is the 'Eq' constraint necessary here? Why?
-unrle :: Eq a => [(a, Int)] -> [a]
-unrle xs = undefined
+-- No, it's not. Because I removed it and it still works.
+unrle :: [(a, Int)] -> [a]
+unrle [] = []
+unrle ((a,0):xs) = unrle xs
+unrle ((a,n):xs) = a : unrle ((a,pred n):xs)
 
 --------------------------------------------------------------------------------
 -- Propositional Logic
@@ -123,11 +154,15 @@ data Prop =
 
 -- | Construct a proposition corresponding to logical implication.
 implies :: Prop -> Prop -> Prop
-implies a b = undefined
+implies a b = Not a `Or` b
 
 -- | Get the list of unique variable names used in a 'Prop'.
 vars :: Prop -> [String]
-vars p = undefined
+vars (Var x) = [x]
+vars (Lit _ ) = []
+vars (Or a b) = vars a ++ vars b
+vars (And a b) = vars a ++ vars b
+vars (Not a) = vars a
 
 -- | Given a map from names to values, check if all of the variables
 -- used in a proposition are defined. That is, the 'String's
@@ -135,7 +170,10 @@ vars p = undefined
 --
 -- 'Map' comes from Data.Map.
 closed :: Map String Bool -> Prop -> Bool
-closed env p = undefined
+closed env p = foldlWithKey (\a k b -> b && good k) True env
+    where
+        good = (`elem` vs)
+        vs = vars p
 
 -- | Evaluate a proposition. If there are any undefined 'Var's, return
 -- 'Nothing'.
