@@ -1,4 +1,5 @@
 module Problems where
+import Control.Applicative
 
 --------------------------------------------------------------------------------
 -- * I/O
@@ -86,38 +87,29 @@ iocmp f g a = ioandthen (f a) g
 -- Believe it or not, you've just defined a small I/O monad! Plug your
 -- functions into the typeclasses.
 
-instance Functor IOAction where
-  -- fmap :: Functor f => (a -> b) -> f a -> f b
-  fmap = undefined
-
-instance Applicative IOAction where
-  -- pure :: Applicative f => a -> f a
-  pure = undefined
-
-  -- (<*>) :: Applicative f => f (a -> b) -> f a -> f b
-  (<*>) = undefined
-
-instance Monad IOAction where
-  -- return :: Monad m => a -> m a
-  return = pure
-
-  -- (>>=) :: Monad m => m a -> (a -> m b) -> m b
-  (>>=) = undefined
-
 -- ** Running 'IOAction's
 
 -- | Turn an 'IOAction' into an 'IO' action, doing actual I/O.
 run :: IOAction a -> IO a
 run = undefined
 
--- Now we can do something exciting: we can use do-notation with your
--- 'IOAction' type and it'll all work!
+-- Now we can do something exciting: pipe together multiple actions with
+-- the 'IOAction' type and it'll all work!
 testIOAction :: IOAction ()
-testIOAction = do
-  writeln "Hello, what is your name?"
-  name <- readln
-  writeln ("Nice to meet you, " ++ name)
+testIOAction = writeln "Hello, what is your name?" `ioandthen` (\_ ->
+               readln                              `ioandthen` (\name ->
+               writeln ("Nice to meet you, " ++ name)))
 
 -- Now try @run testIOAction@!
 
 -- This section taken from <http://chris-taylor.github.io/blog/2013/02/09/io-is-not-a-side-effect/>
+
+
+--------------------------------------------------------------------------------
+-- * Advanced!
+-- Write an interpreter of type IOAction a -> IO a
+-- so that your actions get run in the 'real' world
+
+-- | Run an IOAction in the real world
+interp :: IOAction a -> IO a
+interp = undefined
