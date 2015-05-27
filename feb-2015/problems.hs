@@ -58,7 +58,6 @@ data Nat = Zero | Succ Nat deriving Show
 -- | Turn an 'Int' into a 'Nat'. If the input is less than zero,
 -- return 'Nothing'.
 toNat :: Int -> Maybe Nat
-toNat 0 = Just Zero
 toNat n
     | n < 0 = Nothing
     | n == 0 = Just Zero
