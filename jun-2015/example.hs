@@ -13,7 +13,7 @@ example = do
   readMVar x
 
 -- | Déjà Fu version of the above.
-example2 :: MonadConc m => m Int
+example2 :: (Functor m, MonadConc m) => m Int
 example2 = do
   x <- newCVar 0
   fork . void $ swapCVar x 1
