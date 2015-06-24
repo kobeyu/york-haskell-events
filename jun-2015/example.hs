@@ -2,7 +2,10 @@ import Control.Applicative ((<$>))
 import Control.Concurrent  (forkIO, newMVar, swapMVar, readMVar)
 import Control.Concurrent.CVar (newCVar, swapCVar, readCVar)
 import Control.Monad.Conc.Class (MonadConc, fork)
-import Data.Functor (void)
+import Control.Monad (liftM)
+
+void :: Monad m => m a -> m ()
+void = liftM $ const ()
 
 -- | A simple example of nondeterministic concurrency.
 example :: IO Int
@@ -13,7 +16,7 @@ example = do
   readMVar x
 
 -- | Déjà Fu version of the above.
-example2 :: (Functor m, MonadConc m) => m Int
+example2 :: MonadConc m => m Int
 example2 = do
   x <- newCVar 0
   fork . void $ swapCVar x 1
